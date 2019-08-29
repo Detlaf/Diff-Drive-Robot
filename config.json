@@ -1,0 +1,6 @@
+{
+   "bot": {
+   		"radius": 0.1,
+   		"wheelBase": 0.2
+   	}
+}

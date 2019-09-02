@@ -2,5 +2,24 @@
    "bot": {
    		"radius": 0.1,
    		"wheelBase": 0.2
-   	}
+	   },
+	"epsilon": 0.05,
+	"number_of_points": 5,
+	"route": {
+		"point_1": {
+			"x": 3,
+			"y": 3,
+			"theta": 0.785
+		},
+		"point_2": {
+			"x": 6,
+			"y": 3,
+			"theta": 1.57
+		},
+		"point_3": {
+			"x": 9,
+			"y": 0,
+			"theta": 2.355
+		}
+	}   
 }

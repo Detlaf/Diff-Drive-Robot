@@ -12,22 +12,39 @@ using namespace std;
 using json = nlohmann::json;
 using namespace httplib;
 
+enum class State {
+	MOVING,
+	PAUSED,
+	STOPPED
+};
+
+struct Position {
+	double x;
+	double y;
+	double theta;
+};
+
 class Robot {
 public:
-	Robot(double r, double wb) {
-		radius = r;
-		wheelbase = wb;
-		x = 0.0;
-		y = 0.0;
-		theta = 0.0;
+	Robot() {
+		pos.x = 0.0;
+		pos.y = 0.0;
+		pos.theta = 0.0;
 	}
 
 	void ReadConfig(const string& fileName) {
-		ifstream in(fileName);
+		ifstream in;
 		json j;
-		in >> j;
-		radius = j["bot"]["radius"];
-		wheelbase = j["bot"]["wheelBase"];
+
+		try {
+			in.open(fileName);
+			in >> j;
+			radius = j["bot"]["radius"];
+			wheelbase = j["bot"]["wheelBase"];
+		}
+		catch (const ifstream::failure& ex) {
+			cout << "Exception while opening the config file" << endl;
+		}
 	}
 
 	json GetStatus() {
@@ -36,9 +53,9 @@ public:
 			и скорость робота в формате json
 		*/
 		json status;
-		status["position"]["x"] = x;
-		status["position"]["y"] = y;
-		status["theta"] = theta;
+		status["position"]["x"] = pos.x;
+		status["position"]["y"] = pos.y;
+		status["theta"] = pos.theta;
 		status["velocity"] = v;
 
 		return status;
@@ -48,36 +65,42 @@ public:
 		/*
 			Остановка и сброс цели
 		*/
+		state = State::STOPPED;
 	}
 
 	void Pause() {
 		/*
 			Остановка без сброса цели
 		*/
+		state = State::PAUSED;
 	}
 
 	void Resume() {
 		/*
 			Возобновить движение к цели
 		*/
+		state = State::MOVING;
 	}
 
 	void UpdateOdometry(const double& delta_right, const double& delta_left) {
 		/*
 			Вычисляем дистанцию, пройденную каждым колесом и центром.
 			Обновляем положение и ориентацию робота.
+			Входные параметры:
+			 - угол поворота правого колеса;
+			 - угол поворота левого колеса.
 		*/
 		double distance_right = radius * delta_right;
 		double distance_left = radius * delta_left;
 		double distance_center = (distance_left + distance_right) / 2.0;
 
-		double prev_x = x;
-		double prev_y = y;
-		double prev_theta = theta;
+		double prev_x = pos.x;
+		double prev_y = pos.y;
+		double prev_theta = pos.theta;
 
-		x = prev_x + distance_center * cos(prev_theta);
-		y = prev_y + distance_center * sin(prev_theta);
-		theta = prev_theta + (distance_right - distance_left) / wheelbase;
+		pos.x = prev_x + distance_center * cos(prev_theta);
+		pos.y = prev_y + distance_center * sin(prev_theta);
+		pos.theta = prev_theta + (distance_right - distance_left) / wheelbase;
 	}
 	
 	pair<double, double> UnicycleToDifferential(const double& v, const double& omega) {
@@ -99,50 +122,55 @@ public:
 		return make_pair(delta_right, delta_left);
 	}
 
-	void GoTo(const double& x_dest, const double& y_dest, const double& theta_dest) {
+	void GoTo(const Position& pos_dest) {
+		/*
+			Контур управления движением робота: поворот на заданный угол с дальнейшим движением к цели по прямой.
+			Входные параметры:
+			 - положение робота (x, y, theta).
+		*/
 		double omega;
 		pair<double, double> delta_wheels;
 
-		// Сначала поворот на заданный угол
-		double error = atan2(theta_dest, theta);
-		while (error > eps) {
-			omega = Kp * error;
-			v = 0;
-			cmd_wheels = UnicycleToDifferential(v, omega);
-			delta_wheels = GetWheelsRad();
-			UpdateOdometry(delta_wheels.first, delta_wheels.second);
-			error = atan2(theta_dest, theta);
-		}
-		// Потом едем к цели по прямой
-		double distance = sqrt( pow((x_dest - x), 2) + pow((y_dest, y), 2) );
-		while (distance > eps) {
-			omega = 0;
-			v = Kp * distance;
-			cmd_wheels = UnicycleToDifferential(v, omega);
-			delta_wheels = GetWheelsRad();
-			UpdateOdometry(delta_wheels.first, delta_wheels.second);
-			distance = sqrt(pow((x_dest - x), 2) + pow((y_dest, y), 2));
+		while (state == State::MOVING) {
+			double error = atan2(sin(pos_dest.theta - pos.theta), cos(pos_dest.theta - pos.theta));
+			while (error > eps) {
+				omega = Kp * error;
+				v = 0;
+				cmd_wheels = UnicycleToDifferential(v, omega);
+				delta_wheels = GetWheelsRad();
+				UpdateOdometry(delta_wheels.first, delta_wheels.second);
+				error = atan2(sin(pos_dest.theta - pos.theta), cos(pos_dest.theta - pos.theta));
+			}
+			double distance = sqrt(pow((pos_dest.x - pos.x), 2) + pow((pos_dest.y, pos.y), 2));
+			while (distance > eps) {
+				v = Kp * distance;
+				cmd_wheels = UnicycleToDifferential(v, omega);
+				delta_wheels = GetWheelsRad();
+				UpdateOdometry(delta_wheels.first, delta_wheels.second);
+				distance = sqrt(pow((pos_dest.x - pos.x), 2) + pow((pos_dest.y, pos.y), 2));
+			}
 		}
 	}
 
 private:
 	double radius, wheelbase; // параметры робота
-	double x, y, theta; // текущее положение
+	Position pos; // текущее положение
 	double v; // скорость движения
 	pair<double, double> cmd_wheels; // задание на колеса
 	double Kp; // коэффициент п-регулятора
 	double eps; // погрешность
+	State state; // состояние робота
 };
 
 
 int main() {
-	Robot b = Robot(0.1, 0.2);
+	Robot b = Robot();
 	b.ReadConfig("C:\\Dev\\workspace\\TRA\\test\\src\\config.json");
 
 	Server svr;
 
 	svr.Post("/goto", [&](const Request& req, Response& res) {
-		b.GoTo(0.1, 0.1, 0.1);
+		b.GoTo();
 	});
 
 	svr.Get("/stop", [&](const Request& req, Response& res) {

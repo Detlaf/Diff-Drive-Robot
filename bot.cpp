@@ -15,7 +15,8 @@ using namespace httplib;
 enum class State {
 	MOVING,
 	PAUSED,
-	STOPPED
+	STOPPED,
+	GOAL_REACHED
 };
 
 struct Position {
@@ -30,6 +31,7 @@ public:
 		pos.x = 0.0;
 		pos.y = 0.0;
 		pos.theta = 0.0;
+		v = 0.0;
 	}
 
 	void ReadConfig(const string& fileName) {
@@ -41,6 +43,7 @@ public:
 			in >> j;
 			radius = j["bot"]["radius"];
 			wheelbase = j["bot"]["wheelBase"];
+			eps = j["epsilon"];
 		}
 		catch (const ifstream::failure& ex) {
 			cout << "Exception while opening the config file" << endl;
@@ -66,6 +69,7 @@ public:
 			Остановка и сброс цели
 		*/
 		state = State::STOPPED;
+		v = 0.0;
 	}
 
 	void Pause() {
@@ -73,6 +77,7 @@ public:
 			Остановка без сброса цели
 		*/
 		state = State::PAUSED;
+		v = 0.0;
 	}
 
 	void Resume() {
@@ -106,6 +111,7 @@ public:
 	pair<double, double> UnicycleToDifferential(const double& v, const double& omega) {
 		/*
 			Переход от unicycle (V, omega) модели к differential drive (Vl, Vr)
+			V_r, V_l - задание скорости вращения колес
 		*/
 		double v_r = (2 * v - omega * wheelbase) / (2 * radius);
 		double v_l = (2 * v + omega * wheelbase) / (2 * radius);
@@ -117,19 +123,25 @@ public:
 		/*
 			Считываем положение колес в радианах
 		*/
-		double delta_right = 0.0;
-		double delta_left = 0.0;
+		double delta_right = 0.5;
+		double delta_left = 0.5;
 		return make_pair(delta_right, delta_left);
 	}
 
-	void GoTo(const Position& pos_dest) {
+	void GoTo(const json& goal) {
 		/*
 			Контур управления движением робота: поворот на заданный угол с дальнейшим движением к цели по прямой.
 			Входные параметры:
-			 - положение робота (x, y, theta).
+			 - заданные ориентация и координаты цели (x, y, theta);
+			 - максимальная скорость движения.
 		*/
 		double omega;
 		pair<double, double> delta_wheels;
+		Position pos_dest;
+		pos_dest.x = goal["x"];
+		pos_dest.y = goal["y"];
+		pos_dest.theta = goal["theta"];
+		double Vmax = goal["Vmax"];
 
 		while (state == State::MOVING) {
 			double error = atan2(sin(pos_dest.theta - pos.theta), cos(pos_dest.theta - pos.theta));
@@ -144,10 +156,16 @@ public:
 			double distance = sqrt(pow((pos_dest.x - pos.x), 2) + pow((pos_dest.y, pos.y), 2));
 			while (distance > eps) {
 				v = Kp * distance;
+				if (v > Vmax) {
+					v = Vmax;
+				}
 				cmd_wheels = UnicycleToDifferential(v, omega);
 				delta_wheels = GetWheelsRad();
 				UpdateOdometry(delta_wheels.first, delta_wheels.second);
 				distance = sqrt(pow((pos_dest.x - pos.x), 2) + pow((pos_dest.y, pos.y), 2));
+			}
+			if (error <= eps && distance <= eps) {
+				state = State::GOAL_REACHED;
 			}
 		}
 	}
@@ -157,20 +175,32 @@ private:
 	Position pos; // текущее положение
 	double v; // скорость движения
 	pair<double, double> cmd_wheels; // задание на колеса
-	double Kp; // коэффициент п-регулятора
+	double Kp; // коэффициент П-регулятора
 	double eps; // погрешность
 	State state; // состояние робота
 };
 
+json SetDestination(const double& x, const double& y, const double& theta, const double& Vmax) {
+	json dest;
+
+	dest["x"] = x;
+	dest["y"] = y;
+	dest["theta"] = theta;
+	dest["Vmax"] = Vmax;
+
+	return dest;
+}
 
 int main() {
 	Robot b = Robot();
 	b.ReadConfig("C:\\Dev\\workspace\\TRA\\test\\src\\config.json");
 
+	json goal = SetDestination(5, 5, pi/4, 1.5);
+
 	Server svr;
 
 	svr.Post("/goto", [&](const Request& req, Response& res) {
-		b.GoTo();
+		b.GoTo(goal);
 	});
 
 	svr.Get("/stop", [&](const Request& req, Response& res) {

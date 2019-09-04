@@ -1,0 +1,7 @@
+{
+	"bot": {
+		"radius": 0.15,
+		"wheelBase": 0.2
+	},
+	"epsilon": 0.05
+}

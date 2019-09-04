@@ -24,3 +24,9 @@
 #### Расчет заданий скорости каждого колеса
 <br><img src="https://latex.codecogs.com/gif.latex?V_r&space;=&space;\frac{2*V&space;-&space;\omega*L}{2R}" title="V_r = \frac{2*V - \omega*L}{2R}" /><br>
 <img src="https://latex.codecogs.com/gif.latex?V_l&space;=&space;\frac{2*V&space;&plus;&space;\omega*L}{2R}" title="V_l = \frac{2*V + \omega*L}{2R}" />
+
+#### ПИД-регулятор
+На вход регулятора поступает ошибка по углу, для вычисления которой используем функцию atan2, чтобы она была в пределах <img src="https://latex.codecogs.com/gif.latex?[-\pi,&space;\pi]" title="[-\pi, \pi]" />. 
+Для интегральной составляющей регулятора вычисляем накопившуюся ошибку, для дифференциальной - изменение ошибки:<br><br><img src="https://latex.codecogs.com/gif.latex?e&space;=&space;atan2(sin(\theta_d&space;-&space;\theta),&space;cos(\theta_d&space;-&space;\theta))" title="e = atan2(sin(\theta_d - \theta), cos(\theta_d - \theta))" /><br>
+На выходе получаем угловую скорость:<br><br>
+<img src="https://latex.codecogs.com/gif.latex?\omega&space;=&space;K_p*e&space;&plus;&space;K_i*\sum&space;e&space;&plus;&space;K_d*\Delta&space;e" title="\omega = K_p*e + K_i*\sum e + K_d*\Delta e" />

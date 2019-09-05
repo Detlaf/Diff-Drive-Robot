@@ -1,9 +1,12 @@
-﻿# CMakeList.txt: проект CMake для Robot; включите исходный код и определения,
-# укажите здесь логику для конкретного проекта.
+﻿# CMakeList.txt: файл проекта CMake верхнего уровня; проведите глобальную конфигурацию
+# и включите сюда подпроекты.
 #
-cmake_minimum_required (VERSION 3.8)
-
-# Добавьте источник в исполняемый файл этого проекта.
-add_executable (Robot "Robot.cpp" "Robot.h")
-
-# TODO: Добавьте тесты и целевые объекты, если это необходимо.
+project(Robot)
+cmake_minimum_required(VERSION 3.12)
+set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/../)
+include_directories(${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+file(GLOB CPPS "*.cpp")
+add_definitions(-Wall -O2)
+add_executable(${PROJECT_NAME} ${CPPS})
+target_link_libraries(${PROJECT_NAME})
+install(TARGETS ${PROJECT_NAME} DESTINATION bin)

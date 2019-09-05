@@ -30,3 +30,14 @@
 Для интегральной составляющей регулятора вычисляем накопившуюся ошибку, для дифференциальной - изменение ошибки:<br><br><img src="https://latex.codecogs.com/gif.latex?e&space;=&space;atan2(sin(\theta_d&space;-&space;\theta),&space;cos(\theta_d&space;-&space;\theta))" title="e = atan2(sin(\theta_d - \theta), cos(\theta_d - \theta))" /><br>
 На выходе получаем угловую скорость:<br><br>
 <img src="https://latex.codecogs.com/gif.latex?\omega&space;=&space;K_p*e&space;&plus;&space;K_i*\sum&space;e&space;&plus;&space;K_d*\Delta&space;e" title="\omega = K_p*e + K_i*\sum e + K_d*\Delta e" />
+
+Цель считается достигнутой, если ориентация робота и расстояние от него до цели отличаются менее, чем на величину ошибки, заданную в config.json.
+Расстояние вычисляется по следующей формуле: <br><img src="https://latex.codecogs.com/gif.latex?d&space;=&space;\sqrt{(x_g&space;-&space;x)^2&space;&plus;&space;(y_g&space;-&space;y)^2)}" title="d = \sqrt{(x_g - x)^2 + (y_g - y)^2)}" />
+
+#### Изменение состояния робота
+У робота есть три возможных состояния: MOVING (в движении), PAUSED (остановлен без сброса цели), STOPPED (остановлен со сбросом цели).
+* Переход в состояние MOVING осуществляется при запросе POST GoTo;
+* Запрос GET pause переводит робота в состояние PAUSED, скорость сбрасывается в 0;
+* Запрос GET stop переводит робота в состояние STOPPED, скорость сбрасывается в 0, цель сбрасывается;
+* При достижении цели робот переходит в состояние STOPPED;
+* Перейти в состояние PAUSED робот может, если до этого находился в движении.

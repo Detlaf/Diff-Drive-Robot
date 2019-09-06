@@ -29,7 +29,6 @@ struct Position {
 };
 
 class Robot {
-
 public:
 	Robot();
 	void ReadConfig(const string&);
@@ -41,7 +40,6 @@ public:
 	void UpdateOdometry();
 	pair<double, double> UnicycleToDifferential(const double&, const double&);
 	void GoToGoal(const json&);
-
 private:
 	double radius, wheelbase;
 	Position pos; // текущее положение

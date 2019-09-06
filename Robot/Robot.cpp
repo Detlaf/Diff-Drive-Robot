@@ -2,9 +2,6 @@
 //
 
 #include "Robot.h"
-using namespace std;
-using json = nlohmann::json;
-using namespace httplib;
 
 Robot::Robot() {
 		pos.x = 0;
@@ -19,23 +16,24 @@ Robot::Robot() {
 		Kd = 3;
 }
 
-void Robot::ReadConfig(const string& fileName) {
-	ifstream in;
-	json j;
-
-	cout << "Read config" << endl;
-
-	try {
-		in.open(fileName);
-		in >> j;
-		radius = j["bot"]["radius"];
-		wheelbase = j["bot"]["wheelBase"];
-		eps = j["epsilon"];
+	void Robot::ReadConfig(const string& fileName) {
+		ifstream in;
+		json j;
+		
+		try {
+			in.open(fileName);
+			in >> j;
+			radius = j["bot"]["radius"];
+			cout << radius << endl;
+			wheelbase = j["bot"]["wheelBase"];
+			cout << wheelbase << endl;
+			eps = j["epsilon"];
+			cout << eps << endl;
+		}
+		catch (const ifstream::failure& ex) {
+			cout << "Exception while opening the config file: " << ex.what() << endl;
+		}
 	}
-	catch (const ifstream::failure& ex) {
-		cout << "Exception while opening the config file: " << ex.what() << endl;
-	}
-}
 
 	json Robot::GetStatus() const {
 		/*

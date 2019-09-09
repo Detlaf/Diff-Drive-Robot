@@ -11,21 +11,21 @@
  
 Управление ботом осуществляется заданием скорости вращения каждого колеса - <img src="https://latex.codecogs.com/gif.latex?V_r,&space;V_l" title="V_r, V_l" />. Положение и ориентация бота рассчитываются на основании пройденного пути каждого колеса. В данной модели отсутствуют энкодеры, будем считать, что мы получаем угол поворота каждого колеса в радианах.
 
-#### Расчет пройденного расстояния:
+#### Расчет пройденного расстояния (метод UpdateOdometry):
 <br><img src="https://latex.codecogs.com/gif.latex?D_r&space;=&space;R&space;*&space;\Delta_r" title="D_r = R * \Delta_r" /><br>
 <img src="https://latex.codecogs.com/gif.latex?D_l&space;=&space;R&space;*&space;\Delta_l" title="D_l = R * \Delta_l" /><br>
 <img src="https://latex.codecogs.com/gif.latex?D_c&space;=&space;\frac{D_r&space;&plus;&space;D_l}{2}" title="D_c = \frac{D_r + D_l}{2}" /><br>
 
-#### Вычисление нового положения и ориентации:
+#### Вычисление нового положения и ориентации (метод UpdateOdometry):
 <br><img src="https://latex.codecogs.com/gif.latex?x_{t&plus;1}&space;=&space;x_t&space;&plus;&space;D_c&space;*&space;cos(\theta_t)" title="x_{t+1} = x_t + D_c * cos(\theta_t)" /><br>
 <img src="https://latex.codecogs.com/gif.latex?y_{t&plus;1}&space;=&space;y_t&space;&plus;&space;D_c&space;*&space;sin(\theta_t)" title="y_{t+1} = y_t + D_c * sin(\theta_t)" /><br>
 <img src="https://latex.codecogs.com/gif.latex?\theta_{t&plus;1}&space;=&space;\theta_t&space;&plus;&space;\frac{D_r&space;-&space;D_l}{L}" title="\theta_{t+1} = \theta_t + \frac{D_r - D_l}{L}" /><br>
 
-#### Расчет заданий скорости каждого колеса
+#### Расчет заданий скорости каждого колеса (метод UnicycleToDifferential):
 <br><img src="https://latex.codecogs.com/gif.latex?V_r&space;=&space;\frac{2*V&space;-&space;\omega*L}{2R}" title="V_r = \frac{2*V - \omega*L}{2R}" /><br>
 <img src="https://latex.codecogs.com/gif.latex?V_l&space;=&space;\frac{2*V&space;&plus;&space;\omega*L}{2R}" title="V_l = \frac{2*V + \omega*L}{2R}" />
 
-#### ПИД-регулятор
+#### ПИД-регулятор (метод GoToGoal)
 На вход регулятора поступает ошибка по углу, для вычисления которой используем функцию atan2, чтобы она была в пределах <img src="https://latex.codecogs.com/gif.latex?[-\pi,&space;\pi]" title="[-\pi, \pi]" />. 
 Для интегральной составляющей регулятора вычисляем накопившуюся ошибку, для дифференциальной - изменение ошибки:<br><br><img src="https://latex.codecogs.com/gif.latex?e&space;=&space;atan2(sin(\theta_d&space;-&space;\theta),&space;cos(\theta_d&space;-&space;\theta))" title="e = atan2(sin(\theta_d - \theta), cos(\theta_d - \theta))" /><br>
 На выходе получаем угловую скорость:<br><br>

@@ -2,12 +2,12 @@
 
 Parameters are set in the config.json file. Starting position and orientation: <img src="https://latex.codecogs.com/gif.latex?(x,&space;y,&space;\theta)&space;=&space;(0,&space;0,&space;0)" title="(x, y, \theta) = (0, 0, 0)" />.
 
-### Bot control via HTTP API:
- * POST goTo - send the bot to the destination. Json parameters: x,y - desired position, theta - desired orientation, v - maximum velocity, а - acceleration;
- * GET stop - stop the bot and reset destination;
- * GET pause - stop the bot without resetting the destination;
- * GET resume - resume moving to the destination;
- * GET status - returns a json with current position, orientation and velocity.
+### Bot control via API:
+ * POST /goTo - send the bot to the destination. Json parameters: x,y - desired position, theta - desired orientation, v - maximum velocity, а - acceleration;
+ * GET /stop - stop the bot and reset destination;
+ * GET /pause - stop the bot without resetting the destination;
+ * GET /resume - resume moving to the destination;
+ * GET /status - returns a json with current position, orientation and velocity.
  
 In order to control the bot it is necessary to specify the rotation velocity for each wheel - <img src="https://latex.codecogs.com/gif.latex?V_r,&space;V_l" title="V_r, V_l" />. Position and orientation of the bot are calculated using  distance covered by each wheel. This model does not have encoders, so we assume we receive data for each wheel.
 
